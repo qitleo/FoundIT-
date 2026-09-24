@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FindIt! Dayap NHS Lost & Found Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #9a2004;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(255, 140, 0, 0.9), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(180, 30, 0, 0.95), transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 190, 0, 0.8), transparent 60%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        /* Glassmorphism styling for panels and navigation */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .glass-panel-dark {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Toast notification animations */
+        @keyframes slideIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(234, 88, 12, 0.85);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(234, 88, 12, 1);
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen antialiased selection:bg-orange-500 selection:text-white">
+
+    <nav class="glass-nav sticky top-0 z-40 transition-all duration-300 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Brand / Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('feed')">
+                    <div class="w-12 h-12 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg">
+                        <i class="fa-solid fa-magnifying-glass-location"></i>
+                    </div>
+                    <div>
+                        <span class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 drop-shadow-sm flex items-center gap-1">
+                            Find<span class="text-orange-600">It!</span>
+                        </span>
+                        <span class="block text-xs font-bold text-amber-950 tracking-wider uppercase">
+                            Dayap NHS Lost & Found Hub
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Links -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <button id="nav-feed" onclick="switchTab('feed')" 
+                            class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-orange-600 text-white shadow-md">
+                        <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Found Items
+                    </button>
+                    <button id="nav-honesty" onclick="switchTab('honesty')" 
+                            class="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-800 hover:bg-orange-100 hover:text-orange-700 transition-all duration-200">
+                        <i class="fa-solid fa-award mr-1.5 text-amber-500"></i> Wall of Honesty
+                    </button>
+                    
+                    <!-- Admin Portal Button -->
+                    <button id="nav-admin" onclick="handleAdminTabClick()" 
+                            class="ml-2 px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-orange-600 text-orange-800 bg-white/60 hover:bg-orange-600 hover:text-white transition-all duration-200 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-user-shield"></i> 
+                        <span id="adminNavLabel">Admin Portal</span>
+                    </button>
+                </div>
+
+                <!-- Mobile menu toggle button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="p-2.5 rounded-xl text-slate-800 bg-white/80 hover:bg-orange-100 focus:outline-none shadow">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="hidden md:hidden border-t border-orange-200 bg-white/95 backdrop-blur-md px-4 pt-3 pb-4 space-y-2 shadow-lg">
+            <button onclick="switchTab('feed'); toggleMobileMenu()" class="w-full text-left px-4 py-2.5 rounded-xl font-bold text-slate-800 hover:bg-orange-100">
+                <i class="fa-solid fa-boxes-stacked mr-2 text-orange-600"></i> Found Items
+            </button>
+            <button onclick="switchTab('honesty'); toggleMobileMenu()" class="w-full text-left px-4 py-2.5 rounded-xl font-bold text-slate-800 hover:bg-orange-100">
+                <i class="fa-solid fa-award mr-2 text-amber-500"></i> Wall of Honesty
+            </button>
+            <button onclick="handleAdminTabClick(); toggleMobileMenu()" class="w-full text-left px-4 py-2.5 rounded-xl font-bold text-orange-700 hover:bg-orange-100">
+                <i class="fa-solid fa-user-shield mr-2"></i> Admin Portal
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- VIEW 1: FOUND ITEMS FEED -->
+        <section id="view-feed" class="space-y-6">
+            <!-- Hero Header Banner -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800 mb-3 border border-orange-300 shadow-sm">
+                        <i class="fa-solid fa-sparkles mr-1.5 text-orange-600"></i> Campus Recovery Hub
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight drop-shadow-sm">
+                        Lost Something at Campus? <br><span class="text-orange-600">Find It Here!</span>
+                    </h1>
+                    <p class="mt-2 text-slate-700 text-sm sm:text-base font-semibold">
+                        Browse items surrendered across classrooms, gym, library, and canteen. Submit a claim with proof of ownership to claim your item at the Guidance Office.
+                    </p>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="relative w-full md:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="filterItems()" 
+                           placeholder="Search items, locations, specs..." 
+                           class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white/90 font-medium text-sm text-slate-800 shadow-inner">
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <select id="categoryFilter" onchange="filterItems()" class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white/90 text-sm font-semibold focus:ring-2 focus:ring-orange-500 text-slate-800 shadow-sm">
+                        <option value="all">All Categories</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Stationery">Stationery & Books</option>
+                        <option value="Bags & Accessories">Bags & Accessories</option>
+                        <option value="Clothing">Clothing & Uniforms</option>
+                        <option value="Other">Other Items</option>
+                    </select>
+
+                    <select id="statusFilter" onchange="filterItems()" class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white/90 text-sm font-semibold focus:ring-2 focus:ring-orange-500 text-slate-800 shadow-sm">
+                        <option value="all">All Statuses</option>
+                        <option value="Unclaimed">Unclaimed</option>
+                        <option value="Claimed">Claimed</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Items Grid -->
+            <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic item cards render here -->
+            </div>
+        </section>
+
+        <!-- VIEW 2: WALL OF HONESTY -->
+        <section id="view-honesty" class="hidden space-y-6">
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 text-center max-w-3xl mx-auto shadow-xl">
+                <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner border border-amber-300">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 class="text-3xl font-black text-slate-900">Wall of Honesty</h2>
+                <p class="text-slate-700 mt-2 text-sm sm:text-base font-semibold">
+                    Honoring students, teachers, and staff of Dayap National High School who set an inspiring example by surrendering found belongings.
+                </p>
+            </div>
+
+            <div id="honestyList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Honesty Cards dynamic render -->
+            </div>
+        </section>
+
+        <!-- VIEW 3: ADMIN PORTAL -->
+        <section id="view-admin" class="hidden space-y-6">
+            <div class="glass-panel-dark rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                        <i class="fa-solid fa-shield-check mr-1"></i> Authorized Control Panel
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-black mt-2">Guidance & Property Office Admin</h2>
+                    <p class="text-slate-300 text-sm mt-1">Review student ownership proofs, verify claims, and log new surrendered items.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="openChangePasswordModal()" class="px-4 py-2.5 bg-amber-600/90 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-key"></i> Change Password
+                    </button>
+                    <button onclick="logoutAdmin()" class="px-4 py-2.5 bg-red-600/90 hover:bg-red-600 text-white rounded-xl text-sm font-bold transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i> Exit Admin Mode
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Nav Tabs -->
+            <div class="flex border-b border-white/30 gap-2 flex-wrap sm:flex-nowrap">
+                <button id="adminTabBtn-claims" onclick="switchAdminTab('claims')" class="px-5 py-3 font-bold text-sm border-b-2 border-orange-600 text-slate-900 bg-white/90 rounded-t-xl shadow-sm">
+                    <i class="fa-solid fa-clipboard-check mr-2 text-orange-600"></i> Pending Claims (<span id="claimsCount">0</span>)
+                </button>
+                <button id="adminTabBtn-log" onclick="switchAdminTab('log')" class="px-5 py-3 font-bold text-sm text-slate-800 hover:bg-white/50 rounded-t-xl transition">
+                    <i class="fa-solid fa-circle-plus mr-2 text-green-600"></i> Log New Found Item
+                </button>
+                <button id="adminTabBtn-manage" onclick="switchAdminTab('manage')" class="px-5 py-3 font-bold text-sm text-slate-800 hover:bg-white/50 rounded-t-xl transition">
+                    <i class="fa-solid fa-trash-can mr-2 text-red-600"></i> Manage / Delete Items
+                </button>
+            </div>
+
+            <!-- ADMIN TAB 1: PENDING CLAIMS REQUEST -->
+            <div id="adminTab-claims" class="space-y-4">
+                <div id="pendingClaimsList" class="space-y-4">
+                    <!-- Dynamic claims list -->
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 2: LOG NEW ITEM -->
+            <div id="adminTab-log" class="hidden glass-panel rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl">
+                <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-file-circle-plus text-orange-600"></i> Register New Surrendered Item
+                </h3>
+                <form id="addItemForm" onsubmit="handleLogNewItem(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Item Title *</label>
+                        <input type="text" id="newItemTitle" required placeholder="e.g. Blue Jansport Backpack" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category *</label>
+                            <select id="newItemCategory" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                                <option value="Electronics">Electronics</option>
+                                <option value="Stationery">Stationery & Books</option>
+                                <option value="Bags & Accessories">Bags & Accessories</option>
+                                <option value="Clothing">Clothing & Uniforms</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Found Location *</label>
+                            <input type="text" id="newItemLocation" required placeholder="e.g. Grade 10 Room 302" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Detailed Description *</label>
+                        <textarea id="newItemDesc" rows="3" required placeholder="Color, brand, identifying stickers or contents inside..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Surrendered By (Honest Founder) *</label>
+                            <input type="text" id="newItemFounder" required placeholder="e.g. Juan Dela Cruz (10-Gold)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Image URL (Optional)</label>
+                            <input type="url" id="newItemImage" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl shadow-lg transition duration-200 mt-2">
+                        <i class="fa-solid fa-plus-circle mr-2"></i> Save Item to Public Database
+                    </button>
+                </form>
+            </div>
+
+            <!-- ADMIN TAB 3: MANAGE / DELETE ITEMS -->
+            <div id="adminTab-manage" class="hidden space-y-4">
+                <div id="manageItemsList" class="space-y-4">
+                    <!-- Dynamic list of registered items with delete controls -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CLAIM MODAL -->
+    <div id="claimModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-lg w-full p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto shadow-2xl">
+            <button onclick="closeClaimModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center font-bold text-xl shadow-inner border border-orange-200">
+                    <i class="fa-solid fa-hand-holding-hand"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900">Claim Ownership</h3>
+                    <p id="modalItemTitle" class="text-xs text-orange-700 font-bold uppercase tracking-wide">Item Name</p>
+                </div>
+            </div>
+
+            <form id="claimForm" onsubmit="submitClaimRequest(event)" class="space-y-4">
+                <input type="hidden" id="modalItemId">
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Your Full Name *</label>
+                    <input type="text" id="claimerName" required placeholder="e.g. Maria Clara Santos" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Grade & Section / Role *</label>
+                        <input type="text" id="claimerGrade" required placeholder="Grade 9 - Ruby" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Contact Number / Email *</label>
+                        <input type="text" id="claimerContact" required placeholder="09123456789" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Detailed Proof of Ownership *</label>
+                    <textarea id="claimerProof" rows="4" required placeholder="Describe specific details not obvious in photo (e.g. engravings, stickers, lock screen wallpaper, specific contents)..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium"></textarea>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex gap-2">
+                    <i class="fa-solid fa-circle-info text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
+                    <span>Your request will be sent to the Guidance Admin for verification. Once approved, present your Student ID at the Guidance Office to claim.</span>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeClaimModal()" class="w-1/2 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm shadow-md transition">Submit Claim</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN LOGIN MODAL -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl">
+            <button onclick="closeAdminModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner border border-orange-200">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900">Admin Portal Login</h3>
+                <p class="text-slate-600 text-xs mt-1 font-semibold">Dayap National High School Guidance Office</p>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Enter Security Password</label>
+                    <input type="password" id="adminPasswordInput" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                </div>
+
+                <div id="loginErrorMsg" class="hidden text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-lg border border-red-200 text-center">
+                    Incorrect password. Default is <span class="font-mono underline">admin123</span>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm shadow-md transition">
+                    Unlock Admin Access
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CHANGE ADMIN PASSWORD MODAL -->
+    <div id="changePasswordModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl">
+            <button onclick="closeChangePasswordModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner border border-amber-200">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900">Change Admin Password</h3>
+                <p class="text-slate-600 text-xs mt-1 font-semibold">Update security credentials for Guidance Office access</p>
+            </div>
+
+            <form onsubmit="handleChangePassword(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Current Password *</label>
+                    <input type="password" id="currentPassInput" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">New Password *</label>
+                    <input type="password" id="newPassInput" minlength="4" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Confirm New Password *</label>
+                    <input type="password" id="confirmPassInput" minlength="4" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 bg-white text-sm font-medium">
+                </div>
+
+                <div id="changePassErrorMsg" class="hidden text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-lg border border-red-200 text-center"></div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeChangePasswordModal()" class="w-1/2 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm shadow-md transition">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION MODAL (Replaces native window.confirm) -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-sm w-full p-6 text-center relative shadow-2xl space-y-4">
+            <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-red-200">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">Delete Item?</h3>
+                <p class="text-xs text-slate-600 mt-1">Are you sure you want to remove this item entry permanently?</p>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeDeleteModal()" class="w-1/2 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition">Cancel</button>
+                <button onclick="confirmDeleteItem()" class="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm shadow-md transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+    <script>
+        // Initial Dataset Seed
+        const defaultItems = [
+            {
+                id: "ITEM-101",
+                title: "Scientific Calculator Casio fx-991EX",
+                category: "Electronics",
+                location: "Science Lab 2",
+                date: "2026-09-22",
+                description: "Classwiz model with a blue sticker on the back cover.",
+                image: "https://images.unsplash.com/photo-1594980596870-8aa52a78d8cd?auto=format&fit=crop&w=600&q=80",
+                status: "Unclaimed",
+                founder: "Maria Santos (Grade 10)"
+            },
+            {
+                id: "ITEM-102",
+                title: "Navy Blue Backpack",
+                category: "Bags & Accessories",
+                location: "School Canteen Bench",
+                date: "2026-09-23",
+                description: "Contains notebooks and a blue pencil case. Has a metal keychain attached.",
+                image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80",
+                status: "Unclaimed",
+                founder: "Mark Rizal (Grade 8)"
+            },
+            {
+                id: "ITEM-103",
+                title: "Stainless Water Tumbler (Aqua Flask)",
+                category: "Other",
+                location: "Covered Court Bleachers",
+                date: "2026-09-24",
+                description: "32oz Mint Green color with small dent near the base.",
+                image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80",
+                status: "Unclaimed",
+                founder: "Christian Dela Cruz (Grade 12)"
+            }
+        ];
+
+        const defaultClaims = [
+            {
+                claimId: "CLM-901",
+                itemId: "ITEM-101",
+                itemTitle: "Scientific Calculator Casio fx-991EX",
+                claimerName: "Juan Dela Cruz",
+                claimerGrade: "Grade 10 - Newton",
+                claimerContact: "09171234567",
+                proof: "Has my initials 'JDC' etched on the inner battery cover using a compass tip.",
+                dateSubmitted: "2026-09-24"
+            }
+        ];
+
+        const defaultHonesty = [
+            {
+                founder: "Maria Santos",
+                role: "Student (Grade 10)",
+                item: "Scientific Calculator",
+                date: "Sep 22, 2026"
+            },
+            {
+                founder: "Mark Rizal",
+                role: "Student (Grade 8)",
+                item: "Navy Blue Backpack",
+                date: "Sep 23, 2026"
+            },
+            {
+                founder: "Christian Dela Cruz",
+                role: "Student (Grade 12)",
+                item: "Aqua Flask Tumbler",
+                date: "Sep 24, 2026"
+            }
+        ];
+
+        // Retrieve or initialize state from localStorage
+        let itemsData = JSON.parse(localStorage.getItem('findit_items')) || defaultItems;
+        let pendingClaims = JSON.parse(localStorage.getItem('findit_claims')) || defaultClaims;
+        let honestyWall = JSON.parse(localStorage.getItem('findit_honesty')) || defaultHonesty;
+        let currentAdminPassword = localStorage.getItem('findit_admin_password') || 'admin123';
+        let isAdminLoggedIn = false;
+        let itemToDeleteId = null;
+
+        function saveState() {
+            localStorage.setItem('findit_items', JSON.stringify(itemsData));
+            localStorage.setItem('findit_claims', JSON.stringify(pendingClaims));
+            localStorage.setItem('findit_honesty', JSON.stringify(honestyWall));
+            localStorage.setItem('findit_admin_password', currentAdminPassword);
+        }
+
+        // Helper: Escape HTML strings to prevent XSS injection
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // Helper: Show custom Toast notification message
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-orange-600';
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 text-sm font-bold toast-animate`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> <span>${escapeHtml(message)}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        window.onload = function() {
+            renderItems();
+            renderHonestyWall();
+            updatePendingClaimsUI();
+        };
+
+        function switchTab(tab) {
+            document.getElementById('view-feed').classList.add('hidden');
+            document.getElementById('view-honesty').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.getElementById('nav-feed').className = "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 text-slate-800 hover:bg-orange-100 hover:text-orange-700";
+            document.getElementById('nav-honesty').className = "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 text-slate-800 hover:bg-orange-100 hover:text-orange-700";
+
+            if (tab === 'feed') {
+                document.getElementById('view-feed').classList.remove('hidden');
+                document.getElementById('nav-feed').className = "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-orange-600 text-white shadow-md";
+                renderItems();
+            } else if (tab === 'honesty') {
+                document.getElementById('view-honesty').classList.remove('hidden');
+                document.getElementById('nav-honesty').className = "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-orange-600 text-white shadow-md";
+                renderHonestyWall();
+            } else if (tab === 'admin') {
+                document.getElementById('view-admin').classList.remove('hidden');
+                updatePendingClaimsUI();
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function filterItems() {
+            renderItems();
+        }
+
+        function renderItems() {
+            const grid = document.getElementById('itemsGrid');
+            const search = (document.getElementById('searchInput').value || '').toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+            const filtered = itemsData.filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(search) || 
+                                      item.description.toLowerCase().includes(search) || 
+                                      item.location.toLowerCase().includes(search);
+                const matchesCategory = category === 'all' || item.category === category;
+                const matchesStatus = status === 'all' || item.status === status;
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full glass-panel rounded-2xl p-12 text-center shadow-lg">
+                        <i class="fa-solid fa-folder-open text-4xl text-slate-400 mb-3"></i>
+                        <h3 class="text-lg font-bold text-slate-800">No matching items found</h3>
+                        <p class="text-xs text-slate-600 mt-1 font-medium">Try adjusting your filters or search keywords.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => `
+                <div class="glass-panel rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                    <div class="relative h-48 bg-slate-200 overflow-hidden">
+                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" 
+                             onerror="this.onerror=null; this.src='https://placehold.co/600x400/ea580c/white?text=No+Photo+Available';" 
+                             class="w-full h-full object-cover">
+                        <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold ${item.status === 'Unclaimed' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'} shadow-md">
+                            ${escapeHtml(item.status)}
+                        </span>
+                        <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/95 text-slate-900 backdrop-blur-md shadow-sm">
+                            ${escapeHtml(item.category)}
+                        </span>
+                    </div>
+
+                    <div class="p-5 flex-grow flex flex-col justify-between space-y-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg leading-snug">${escapeHtml(item.title)}</h3>
+                            <p class="text-xs font-bold text-orange-700 mt-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-dot"></i> ${escapeHtml(item.location)} • <i class="fa-regular fa-calendar ml-1"></i> ${escapeHtml(item.date)}
+                            </p>
+                            <p class="text-slate-700 text-xs mt-2 line-clamp-2 font-medium">${escapeHtml(item.description)}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-300/80 flex items-center justify-between gap-2">
+                            <span class="text-[11px] text-slate-700 font-semibold truncate">
+                                Surrendered by <strong class="text-slate-900">${escapeHtml(item.founder)}</strong>
+                            </span>
+                            
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                ${isAdminLoggedIn ? `
+                                    <button onclick="promptDeleteItem('${item.id}')" 
+                                            title="Delete Item" 
+                                            class="px-2.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                ` : ''}
+
+                                ${item.status === 'Unclaimed' ? `
+                                    <button onclick="openClaimModal('${item.id}', '${escapeHtml(item.title)}')" 
+                                            class="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition">
+                                        This is Mine!
+                                    </button>
+                                ` : `
+                                    <span class="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                                        <i class="fa-solid fa-circle-check"></i> Claimed
+                                    </span>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderHonestyWall() {
+            const container = document.getElementById('honestyList');
+            if (honestyWall.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-center text-slate-600 font-bold py-8">No honesty records yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = honestyWall.map(h => `
+                <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 transition hover:shadow-xl">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center text-xl font-black shadow-md flex-shrink-0">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-base">${escapeHtml(h.founder)}</h4>
+                        <p class="text-xs font-semibold text-orange-700">${escapeHtml(h.role)}</p>
+                        <p class="text-xs text-slate-600 mt-1 font-medium">Surrendered: <strong class="text-slate-800">${escapeHtml(h.item)}</strong> (${escapeHtml(h.date)})</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openClaimModal(itemId, itemTitle) {
+            document.getElementById('modalItemId').value = itemId;
+            document.getElementById('modalItemTitle').innerText = itemTitle;
+            document.getElementById('claimForm').reset();
+            document.getElementById('claimModal').classList.remove('hidden');
+        }
+
+        function closeClaimModal() {
+            document.getElementById('claimModal').classList.add('hidden');
+        }
+
+        function submitClaimRequest(e) {
+            e.preventDefault();
+            const itemId = document.getElementById('modalItemId').value;
+            const item = itemsData.find(i => i.id === itemId);
+
+            const newClaim = {
+                claimId: 'CLM-' + Math.floor(1000 + Math.random() * 9000),
+                itemId: itemId,
+                itemTitle: item ? item.title : 'Unknown Item',
+                claimerName: document.getElementById('claimerName').value.trim(),
+                claimerGrade: document.getElementById('claimerGrade').value.trim(),
+                claimerContact: document.getElementById('claimerContact').value.trim(),
+                proof: document.getElementById('claimerProof').value.trim(),
+                dateSubmitted: new Date().toISOString().split('T')[0]
+            };
+
+            pendingClaims.unshift(newClaim);
+            saveState();
+            closeClaimModal();
+            updatePendingClaimsUI();
+            showToast("Claim request submitted to Guidance Admin for review!", "success");
+        }
+
+        function handleAdminTabClick() {
+            if (isAdminLoggedIn) {
+                switchTab('admin');
+            } else {
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('loginErrorMsg').classList.add('hidden');
+                document.getElementById('adminLoginModal').classList.remove('hidden');
+            }
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminLoginModal').classList.add('hidden');
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (pass === currentAdminPassword) {
+                isAdminLoggedIn = true;
+                closeAdminModal();
+                document.getElementById('adminNavLabel').innerText = "Admin Center";
+                renderItems();
+                switchTab('admin');
+                showToast("Admin access granted", "success");
+            } else {
+                document.getElementById('loginErrorMsg').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            document.getElementById('adminNavLabel').innerText = "Admin Portal";
+            renderItems();
+            switchTab('feed');
+            showToast("Logged out from Admin mode", "info");
+        }
+
+        function switchAdminTab(subTab) {
+            document.getElementById('adminTab-claims').classList.add('hidden');
+            document.getElementById('adminTab-log').classList.add('hidden');
+            document.getElementById('adminTab-manage').classList.add('hidden');
+
+            document.getElementById('adminTabBtn-claims').className = "px-5 py-3 font-bold text-sm text-slate-800 hover:bg-white/50 rounded-t-xl transition";
+            document.getElementById('adminTabBtn-log').className = "px-5 py-3 font-bold text-sm text-slate-800 hover:bg-white/50 rounded-t-xl transition";
+            document.getElementById('adminTabBtn-manage').className = "px-5 py-3 font-bold text-sm text-slate-800 hover:bg-white/50 rounded-t-xl transition";
+
+            if (subTab === 'claims') {
+                document.getElementById('adminTab-claims').classList.remove('hidden');
+                document.getElementById('adminTabBtn-claims').className = "px-5 py-3 font-bold text-sm border-b-2 border-orange-600 text-slate-900 bg-white/90 rounded-t-xl shadow-sm";
+                updatePendingClaimsUI();
+            } else if (subTab === 'log') {
+                document.getElementById('adminTab-log').classList.remove('hidden');
+                document.getElementById('adminTabBtn-log').className = "px-5 py-3 font-bold text-sm border-b-2 border-orange-600 text-slate-900 bg-white/90 rounded-t-xl shadow-sm";
+            } else if (subTab === 'manage') {
+                document.getElementById('adminTab-manage').classList.remove('hidden');
+                document.getElementById('adminTabBtn-manage').className = "px-5 py-3 font-bold text-sm border-b-2 border-red-600 text-slate-900 bg-white/90 rounded-t-xl shadow-sm";
+                updateManageItemsUI();
+            }
+        }
+
+        function updatePendingClaimsUI() {
+            const container = document.getElementById('pendingClaimsList');
+            document.getElementById('claimsCount').innerText = pendingClaims.length;
+
+            if (pendingClaims.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-panel rounded-2xl p-8 text-center text-slate-700 font-bold">
+                        <i class="fa-solid fa-circle-check text-3xl text-emerald-600 mb-2"></i>
+                        <p>No pending claims to review.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingClaims.map(c => `
+                <div class="glass-panel rounded-2xl p-5 shadow-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-md bg-orange-100 text-orange-800 font-black text-xs border border-orange-300">${escapeHtml(c.claimId)}</span>
+                            <h4 class="font-bold text-slate-900 text-base">${escapeHtml(c.itemTitle)}</h4>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-700">
+                            Claimant: <strong class="text-slate-900">${escapeHtml(c.claimerName)}</strong> (${escapeHtml(c.claimerGrade)}) • Contact: <span class="font-mono">${escapeHtml(c.claimerContact)}</span>
+                        </p>
+                        <div class="bg-white/80 p-3 rounded-xl border border-slate-300 text-xs text-slate-800 mt-2">
+                            <strong>Proof Submitted:</strong> ${escapeHtml(c.proof)}
+                        </div>
+                        <p class="text-[10px] text-slate-500">Submitted on ${escapeHtml(c.dateSubmitted)}</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <button onclick="approveClaim('${c.claimId}')" class="w-1/2 md:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-check"></i> Approve Claim
+                        </button>
+                        <button onclick="rejectClaim('${c.claimId}')" class="w-1/2 md:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-xmark"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function approveClaim(claimId) {
+            const claim = pendingClaims.find(c => c.claimId === claimId);
+            if (!claim) return;
+
+            // Mark item as Claimed
+            const item = itemsData.find(i => i.id === claim.itemId);
+            if (item) {
+                item.status = "Claimed";
+            }
+
+            // Remove from pending claims
+            pendingClaims = pendingClaims.filter(c => c.claimId !== claimId);
+            saveState();
+            renderItems();
+            updatePendingClaimsUI();
+            showToast(`Claim approved for ${claim.claimerName}!`, "success");
+        }
+
+        function rejectClaim(claimId) {
+            pendingClaims = pendingClaims.filter(c => c.claimId !== claimId);
+            saveState();
+            updatePendingClaimsUI();
+            showToast("Claim request rejected.", "info");
+        }
+
+        function handleLogNewItem(e) {
+            e.preventDefault();
+            const title = document.getElementById('newItemTitle').value.trim();
+            const category = document.getElementById('newItemCategory').value;
+            const location = document.getElementById('newItemLocation').value.trim();
+            const description = document.getElementById('newItemDesc').value.trim();
+            const founder = document.getElementById('newItemFounder').value.trim();
+            const image = document.getElementById('newItemImage').value.trim() || "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=600&q=80";
+
+            const newItem = {
+                id: "ITEM-" + Math.floor(100 + Math.random() * 900),
+                title,
+                category,
+                location,
+                date: new Date().toISOString().split('T')[0],
+                description,
+                image,
+                status: "Unclaimed",
+                founder
+            };
+
+            itemsData.unshift(newItem);
+
+            // Add founder to Honesty Wall automatically if not present
+            honestyWall.unshift({
+                founder: founder,
+                role: "Honest Finder",
+                item: title,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            });
+
+            saveState();
+            document.getElementById('addItemForm').reset();
+            renderItems();
+            renderHonestyWall();
+            showToast("New found item registered successfully!", "success");
+            switchAdminTab('manage');
+        }
+
+        function updateManageItemsUI() {
+            const container = document.getElementById('manageItemsList');
+
+            if (itemsData.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-panel rounded-2xl p-8 text-center text-slate-700 font-bold">
+                        <i class="fa-solid fa-box-open text-3xl text-slate-400 mb-2"></i>
+                        <p>No items registered in database.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = itemsData.map(item => `
+                <div class="glass-panel rounded-2xl p-4 shadow-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <img src="${escapeHtml(item.image)}" alt="" class="w-16 h-16 rounded-xl object-cover border border-slate-300 flex-shrink-0" onerror="this.src='https://placehold.co/100x100/ea580c/white?text=Item';">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${item.status === 'Unclaimed' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">${escapeHtml(item.status)}</span>
+                                <h4 class="font-extrabold text-slate-900 text-base">${escapeHtml(item.title)}</h4>
+                            </div>
+                            <p class="text-xs text-slate-700 mt-1 font-semibold">
+                                <i class="fa-solid fa-location-dot text-orange-600"></i> ${escapeHtml(item.location)} • Category: <strong>${escapeHtml(item.category)}</strong> • Logged: ${escapeHtml(item.date)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button onclick="promptDeleteItem('${item.id}')" class="w-full md:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-trash-can"></i> Delete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function promptDeleteItem(itemId) {
+            itemToDeleteId = itemId;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            itemToDeleteId = null;
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+        }
+
+        function confirmDeleteItem() {
+            if (!itemToDeleteId) return;
+            itemsData = itemsData.filter(i => i.id !== itemToDeleteId);
+            pendingClaims = pendingClaims.filter(c => c.itemId !== itemToDeleteId);
+            saveState();
+            closeDeleteModal();
+            renderItems();
+            updateManageItemsUI();
+            updatePendingClaimsUI();
+            showToast("Item deleted from database.", "info");
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('currentPassInput').value = '';
+            document.getElementById('newPassInput').value = '';
+            document.getElementById('confirmPassInput').value = '';
+            document.getElementById('changePassErrorMsg').classList.add('hidden');
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+        }
+
+        function handleChangePassword(e) {
+            e.preventDefault();
+            const currentPass = document.getElementById('currentPassInput').value;
+            const newPass = document.getElementById('newPassInput').value;
+            const confirmPass = document.getElementById('confirmPassInput').value;
+            const errDiv = document.getElementById('changePassErrorMsg');
+
+            if (currentPass !== currentAdminPassword) {
+                errDiv.innerText = "Current password does not match!";
+                errDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                errDiv.innerText = "New passwords do not match!";
+                errDiv.classList.remove('hidden');
+                return;
+            }
+
+            currentAdminPassword = newPass;
+            saveState();
+            closeChangePasswordModal();
+            showToast("Password updated successfully!", "success");
+        }
+    </script>
+</body>
+</html>
